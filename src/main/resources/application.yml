@@ -2,7 +2,7 @@ spring:
  security:
   jwt:
    key: "averyverylongkey"
-   expire: 5
+   expire: 50
   filter:
    order: -100
  datasource:

@@ -41,6 +41,7 @@ public class SecurityConfiguration {
         return http
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/auth/**").permitAll();
+                    //uth.requestMatchers("/api/student/**").permitAll();
                     auth.anyRequest().authenticated();
                 })
                 .formLogin(conf -> {
