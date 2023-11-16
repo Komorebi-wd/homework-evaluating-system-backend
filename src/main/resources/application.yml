@@ -1,0 +1,32 @@
+spring:
+ security:
+  jwt:
+   key: "averyverylongkey"
+   expire: 5
+  filter:
+   order: -100
+ datasource:
+  url: jdbc:mysql://localhost:3306/test1
+  username: root
+  password: 123456
+  driver-class-name: com.mysql.cj.jdbc.Driver
+ thymeleaf:
+  cache: false
+ mvc:
+  static-path-pattern: /static/**
+ mail:
+  host: smtp.163.com
+  protocol: smtp
+  default-encoding: UTF-8
+  username: 17732001168@163.com
+  password: OPIDTKHRNDNSNXUQ
+  test-connection: true
+  properties:
+   mail:
+    smtp:
+     auth: true
+     starttls:
+      enable: true
+      required: true
+
+
