@@ -3,15 +3,9 @@ package com.example.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.entity.RestBean;
-import com.example.entity.dto.Account;
-import com.example.entity.dto.StudentCourse;
-import com.example.entity.dto.StudentHomework;
-import com.example.entity.dto.TeacherHomework;
+import com.example.entity.dto.*;
 import com.example.entity.vo.response.DistributionVO;
-import com.example.mapper.CourseMapper;
-import com.example.mapper.StudentCourseMapper;
-import com.example.mapper.StudentHomeworkMapper;
-import com.example.mapper.TeacherHomeworkMapper;
+import com.example.mapper.*;
 import com.example.service.impl.*;
 import com.example.util.MarkUtils;
 import jakarta.annotation.Resource;
@@ -26,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.http.HttpHeaders;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +36,7 @@ public class StudentController {
     * 6. submitShWithSidCidThId 上传指定cid、thId的学生作业Sh（sid取自UserDetail)
     * 7. getAllShsWithSidCidThId   查看指定cid、thId、sid（取自UserDetail）的学生作业Shs
     * 8. downloadAllShsWithSidCidThId 下载指定cid、thId、sid（取自UserDetail）的学生作业Shs（若已提交多个Sh，打包成zip）
+    * 9. getAllUnSubmitThsWithSid 查看指定sid（取自UserDetail）的全部为提交作业
     * */
     /*批改作业相关
     * 1. distributeShToClassMates(将本次作业分发给同学）（根据算法发给提交次数最少的同学）(后续考虑多次提交情况）
@@ -72,9 +66,43 @@ public class StudentController {
     @Resource
     MarkServiceImpl markService;
     @Resource
+    MarkMapper markMapper;
+    @Resource
     TeacherHomeworkMapper teacherHomeworkMapper;
     @Resource
     MarkUtils markUtils;
+
+    @GetMapping("/tHomework/unSubmit/getAll")
+    public String getAllUnSubmitThsWithSid(){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String sid = account.getUid();
+
+        return RestBean.success(teacherHomeworkService.findUnsubmittedThIds(sid), "成功查询所有未提交作业，当前sid: "+sid).asJsonString();
+
+    }
+
+    @GetMapping("/course/tHomework/sHomework/{shId}/mark/getAll")
+    public String getAllMarksWithShId(@PathVariable int shId){
+        QueryWrapper<Mark> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("sh_id", shId);
+
+        List<Mark> marks = markMapper.selectList(queryWrapper);
+        return RestBean.success(marks, "成功查询批改列表，当前shId: " + shId).asJsonString();
+    }
+
+    //获得指定thid下，自身所提交的全部mark
+    @GetMapping("/course/{cid}/tHomework/{thId}/mark/getAll")
+    public String getMyMarksWithCidThId(@PathVariable int cid, @PathVariable int thId){
+        thId = cid*10 + thId;
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String sid = account.getUid();
+
+        List<Mark> marks = markMapper.selectMarksByThId(thId,sid);
+        return RestBean.success(marks, "成功查询批改列表，当前thId: "+thId).asJsonString();
+    }
+
 
     //下载本人全部待批改sh，打包zip
     //写的有点丑陋，后面修饰下
@@ -130,6 +158,7 @@ public class StudentController {
             DistributionVO distributionVO = new DistributionVO();
             distributionVO.setShId(studentHomework.getShId());
             distributionVO.setThId(studentHomework.getThId());
+            distributionVO.setShName(studentHomework.getFileName());
             distributionVO.setCid(teacherHomeworkMapper.getCidByThId(studentHomework.getThId()));
             distributionVO.setCname(courseMapper.getCnameByCid(distributionVO.getCid()));
             distributionVO.setSubmitTime(studentHomework.getSubmitTime());

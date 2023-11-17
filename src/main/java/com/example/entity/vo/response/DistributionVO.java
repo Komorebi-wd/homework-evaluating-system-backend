@@ -12,5 +12,6 @@ public class DistributionVO {
     Integer thId;
     Integer cid;
     String cname;
+    String shName;
     Date submitTime;
 }

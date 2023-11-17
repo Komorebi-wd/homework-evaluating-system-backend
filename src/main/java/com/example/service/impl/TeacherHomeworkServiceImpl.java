@@ -2,7 +2,11 @@ package com.example.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.entity.dto.StudentCourse;
+import com.example.entity.dto.StudentHomework;
 import com.example.entity.dto.TeacherHomework;
+import com.example.mapper.StudentCourseMapper;
+import com.example.mapper.StudentHomeworkMapper;
 import com.example.mapper.TeacherHomeworkMapper;
 import com.example.service.TeacherHomeworkService;
 import com.example.util.NewFileUtil;
@@ -17,6 +21,7 @@ import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TeacherHomeworkServiceImpl extends ServiceImpl<TeacherHomeworkMapper, TeacherHomework> implements TeacherHomeworkService{
@@ -24,6 +29,43 @@ public class TeacherHomeworkServiceImpl extends ServiceImpl<TeacherHomeworkMappe
     NewFileUtil newFileUtil;
     @Resource
     CourseServiceImpl courseService;
+
+    @Resource
+    StudentCourseMapper studentCourseMapper;
+    @Resource
+    TeacherHomeworkMapper teacherHomeworkMapper;
+    @Resource
+    StudentHomeworkMapper studentHomeworkMapper;
+
+    public List<TeacherHomework> findUnsubmittedThIds(String sid) {
+        // sid所选全部cids
+        List<Integer> cids = studentCourseMapper.selectList(
+                        new QueryWrapper<StudentCourse>().eq("sid", sid))
+                .stream()
+                .map(StudentCourse::getCid)
+                .collect(Collectors.toList());
+
+        // cids所对应全部应提交thIds
+        List<Integer> allThIds = teacherHomeworkMapper.selectList(
+                        new QueryWrapper<TeacherHomework>().in("cid", cids))
+                .stream()
+                .map(TeacherHomework::getThId)
+                .toList();
+
+        //sid所对应全部已提交thIds
+        List<Integer> submittedThIds = studentHomeworkMapper.selectList(
+                        new QueryWrapper<StudentHomework>().eq("sid", sid))
+                .stream()
+                .map(StudentHomework::getThId)
+                .toList();
+
+        //做差集，获得应提交但为提交thIds
+        List<Integer> thIds  = allThIds.stream()
+                                    .filter(thId -> !submittedThIds.contains(thId))
+                                    .collect(Collectors.toList());
+
+        return teacherHomeworkMapper.selectBatchIds(thIds);
+    }
 
     //默认从现在起一周时间
     //传入thId表示第n次作业
