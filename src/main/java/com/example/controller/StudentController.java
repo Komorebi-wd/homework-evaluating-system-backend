@@ -129,6 +129,7 @@ public class StudentController {
             DistributionVO distributionVO = new DistributionVO();
             distributionVO.setShId(studentHomework.getShId());
             distributionVO.setThId(studentHomework.getThId());
+            distributionVO.setShName(studentHomework.getFileName());
             distributionVO.setCid(teacherHomeworkMapper.getCidByThId(studentHomework.getThId()));
             distributionVO.setCname(courseMapper.getCnameByCid(distributionVO.getCid()));
             distributionVO.setSubmitTime(studentHomework.getSubmitTime());
