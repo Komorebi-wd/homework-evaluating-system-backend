@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.StudentCourse;
 import com.example.entity.dto.StudentHomework;
 import com.example.entity.dto.TeacherHomework;
+import com.example.mapper.CourseMapper;
 import com.example.mapper.StudentCourseMapper;
 import com.example.mapper.StudentHomeworkMapper;
 import com.example.mapper.TeacherHomeworkMapper;
@@ -29,6 +30,8 @@ public class TeacherHomeworkServiceImpl extends ServiceImpl<TeacherHomeworkMappe
     NewFileUtil newFileUtil;
     @Resource
     CourseServiceImpl courseService;
+    @Resource
+    CourseMapper courseMapper;
 
     @Resource
     StudentCourseMapper studentCourseMapper;
@@ -64,7 +67,11 @@ public class TeacherHomeworkServiceImpl extends ServiceImpl<TeacherHomeworkMappe
                                     .filter(thId -> !submittedThIds.contains(thId))
                                     .collect(Collectors.toList());
 
-        return teacherHomeworkMapper.selectBatchIds(thIds);
+        List<TeacherHomework> teacherHomeworks = teacherHomeworkMapper.selectBatchIds(thIds);
+        for ( TeacherHomework teacherHomework : teacherHomeworks) {
+            teacherHomework.setCname(courseMapper.getCnameByCid(teacherHomework.getCid()));
+        }
+        return teacherHomeworks;
     }
 
     //默认从现在起一周时间
