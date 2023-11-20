@@ -318,4 +318,14 @@ public class StudentController {
     public String getAllCourses(){
         return RestBean.success(courseService.list(), "成功查询全部课程信息").asJsonString();
     }
+
+    @GetMapping("/course/{cid}/tHomework/{thId}")//此处thId指第x次作业
+    @PreAuthorize("hasRole('student')")
+    public String getThWithCidThid(@PathVariable int cid, @PathVariable int thId) {
+        thId = cid*10 + thId;//真正thId
+        return RestBean.success(teacherHomeworkService.getById(thId), "教师作业查询成功，当前thId: " + thId+", cid: "+cid).asJsonString();
+    }
+
 }
+
+
