@@ -322,7 +322,7 @@ public class StudentController {
     @GetMapping("/course/{cid}/tHomework/{thId}")
     @PreAuthorize("hasRole('student')")
     public String getThWithCidThid(@PathVariable int cid, @PathVariable int thId) {
-        //thId = cid*10 + thId;//真正thId
+        thId = cid*10 + thId;//真正thId
         return RestBean.success(teacherHomeworkService.getById(thId), "教师作业查询成功，当前thId: " + thId+", cid: "+cid).asJsonString();
     }
 

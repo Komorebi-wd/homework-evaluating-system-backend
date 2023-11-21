@@ -40,6 +40,7 @@ public class CorsFilter extends HttpFilter {
         response.addHeader("Access-Control-Allow-Origin", this.resolveOrigin(request));
         response.addHeader("Access-Control-Allow-Methods", this.resolveMethod());
         response.addHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+        response.addHeader("Access-Control-Expose-Headers", "Content-Disposition");
         if(credentials) {
             response.addHeader("Access-Control-Allow-Credentials", "true");
         }
