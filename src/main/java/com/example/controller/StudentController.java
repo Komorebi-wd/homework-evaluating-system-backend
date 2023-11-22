@@ -362,6 +362,12 @@ public class StudentController {
         return RestBean.success(teacherHomeworkService.getById(thId), "教师作业查询成功，当前thId: " + thId+", cid: "+cid).asJsonString();
     }
 
+    @GetMapping("/course/tHomework/sHomework/{shId}")
+    @PreAuthorize("hasRole('student')")
+    public String getShWithShId(@PathVariable int shId){
+        return RestBean.success(studentHomeworkService.getById(shId), "成功查询学生作业, 当前shId: "+shId).asJsonString();
+    }
+
 }
 
 
