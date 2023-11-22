@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -31,7 +32,7 @@ public class TeacherController {
     /*
     * 1: getAllCoursesByTid 获得当前tid(UserDetail)下全部course
     * 2: getAllStudentsByCid 获得指定Cid下全部学生
-    * 3: putThWithCid 为指定Cid添加Th作业
+    * 3: putThWithCidEndDateComment 为指定Cid添加Th作业, 同时指定截止日期
     * 4: getAllShWithCidThId 获得指定Cid、ThId下全部学生作业Sh(简略信息，而非文件本身）
     * 5: downloadShsWithCidSidThId 获得指定Cid、ThId下指定sid学生的作业Sh（下载文件, 多个文件打包为zip）
     * */
@@ -65,8 +66,8 @@ public class TeacherController {
 
     @PostMapping("/tHomework/upload")//thId是第x次作业
     @PreAuthorize("hasRole('teacher')")
-    public String putThWithCid(int thId, int cid, MultipartFile multipartFile) throws SQLException, IOException {
-        if(teacherHomeworkService.uploadTeacherHomework(multipartFile, cid, thId)){
+    public String putThWithCidEndDateComment(int thId, int cid, Date endDate, String comment, MultipartFile multipartFile) throws SQLException, IOException {
+        if(teacherHomeworkService.uploadTeacherHomework(multipartFile, cid, thId, endDate, comment)){
             return RestBean.success("cid: " + cid + "thId: " + (thId+cid*10)).asJsonString();
         } else return RestBean.failure(999, "添加失败：'cid: " + cid + "thId: " + (thId+cid*10)+"'").asJsonString();
     }

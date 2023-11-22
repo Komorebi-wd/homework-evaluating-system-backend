@@ -77,14 +77,14 @@ public class TeacherHomeworkServiceImpl extends ServiceImpl<TeacherHomeworkMappe
     //默认从现在起一周时间
     //传入thId表示第n次作业
     @Transactional
-    public Boolean uploadTeacherHomework(MultipartFile multipartFile, int cid, int thId) throws IOException, SQLException {
+    public Boolean uploadTeacherHomework(MultipartFile multipartFile, int cid, int thId, Date endDate, String comment) throws IOException, SQLException {
        // Blob blob = new SerialBlob(multipartFile.getBytes());
         // 创建一个 Calendar 对象，并设置为开始时间
         Date startDate = new Date();
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(startDate);
-        // 在开始时间上添加一周的时间（7天）
-        calendar.add(Calendar.DAY_OF_YEAR, 7);
+//        Calendar calendar = Calendar.getInstance();
+//        calendar.setTime(startDate);
+//        // 在开始时间上添加一周的时间（7天）
+//        calendar.add(Calendar.DAY_OF_YEAR, 7);
 
         thId = cid*10 + thId;//作业号设为课程号*10+第n此作业
 
@@ -97,7 +97,8 @@ public class TeacherHomeworkServiceImpl extends ServiceImpl<TeacherHomeworkMappe
                 .setFileSize(String.valueOf(multipartFile.getSize()))
                 .setFileData(multipartFile.getBytes())
                 .setStartTime(startDate)
-                .setEndTime(calendar.getTime());
+                .setEndTime(endDate)
+                .setComment(comment);
 
         return this.saveOrUpdate(teacherHomework);
     }

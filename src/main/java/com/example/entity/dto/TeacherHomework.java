@@ -28,6 +28,7 @@ public class TeacherHomework {
     String fileSize;
     Date startTime;
     Date endTime;
+    String comment;
 
     @TableField(exist = false)
     String cname;

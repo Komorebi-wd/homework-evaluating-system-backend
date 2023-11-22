@@ -33,7 +33,8 @@ public class StudentController {
     * 3. getAllCoursesBySid 当前学生课程列表（sid取自UserDetail）
     * 4. getAllThsWithCid 查看指定cid下所有教师作业Th
     * 5. downloadThWithCidThId 下载指定cid下指定thId教师作业（thId指第x次作业）
-    * 6. submitShWithSidCidThId 上传指定cid、thId的学生作业Sh（sid取自UserDetail)
+    * 6. submitShWithSidCidThIdComment 上传指定cid、thId的学生作业Sh（sid取自UserDetail)
+    * 6-5. submitShsWithSidCidThIdComment 上传指定cid、thId的多个学生作业Shs（sid取自UserDetail)
     * 7. getAllShsWithSidCidThId   查看指定cid、thId、sid（取自UserDetail）的学生作业Shs
     * 8. downloadAllShsWithSidCidThId 下载指定cid、thId、sid（取自UserDetail）的学生作业Shs（若已提交多个Sh，打包成zip）
     * 9. getAllUnSubmitThsWithSid 查看指定sid（取自UserDetail）的全部为提交作业
@@ -152,20 +153,22 @@ public class StudentController {
                 studentHomeworks.add(studentHomework);
             }
         }
-        //转为vo返回前端
-        List<DistributionVO> distributionVOList = new ArrayList<>();
-        for (StudentHomework studentHomework : studentHomeworks) {
-            DistributionVO distributionVO = new DistributionVO();
-            distributionVO.setShId(studentHomework.getShId());
-            distributionVO.setThId(studentHomework.getThId());
-            distributionVO.setShName(studentHomework.getFileName());
-            distributionVO.setCid(teacherHomeworkMapper.getCidByThId(studentHomework.getThId()));
-            distributionVO.setCname(courseMapper.getCnameByCid(distributionVO.getCid()));
-            distributionVO.setSubmitTime(studentHomework.getSubmitTime());
-            distributionVOList.add(distributionVO);
-        }
+        return RestBean.success(studentHomeworks, "成功查询待批改作业列表, 共"+studentHomeworks.size()+"项").asJsonString();
 
-        return RestBean.success(distributionVOList, "成功查询待批改作业列表, 共"+distributionVOList.size()+"项").asJsonString();
+//        //转为vo返回前端
+//        List<DistributionVO> distributionVOList = new ArrayList<>();
+//        for (StudentHomework studentHomework : studentHomeworks) {
+//            DistributionVO distributionVO = new DistributionVO();
+//            distributionVO.setShId(studentHomework.getShId());
+//            distributionVO.setThId(studentHomework.getThId());
+//            distributionVO.setShName(studentHomework.getFileName());
+//            distributionVO.setCid(teacherHomeworkMapper.getCidByThId(studentHomework.getThId()));
+//            distributionVO.setCname(courseMapper.getCnameByCid(distributionVO.getCid()));
+//            distributionVO.setSubmitTime(studentHomework.getSubmitTime());
+//            distributionVOList.add(distributionVO);
+//        }
+
+        //return RestBean.success(distributionVOList, "成功查询待批改作业列表, 共"+distributionVOList.size()+"项").asJsonString();
     }
 
     //将指定shId作业分发给同班x个同学（x这里设为3）
@@ -174,7 +177,10 @@ public class StudentController {
     // Warning：
     //  1.防范分发不属于自己作业情况的发生
     //  2.防范重复分发同一作业 OR 同th下的不同sh
-    @PostMapping("/course/tHomework/sHomework/distribute")
+
+    //@PostMapping("/course/tHomework/sHomework/distribute")
+
+    //这是一个method, 而不是一个url，后续改到service中
     public String distributeShToClassMates(int shId){
         UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
@@ -258,15 +264,45 @@ public class StudentController {
 
     @PostMapping("/course/tHomework/sHomework/submit")
     @PreAuthorize("hasRole('student')")
-    public String submitShWithSidCidThId(int cid, int thId, MultipartFile multipartFile) throws SQLException, IOException {//thId指第x次作业
+    public String submitShWithSidCidThIdComment(int cid, int thId, String comment, MultipartFile multipartFile) throws SQLException, IOException {//thId指第x次作业
         thId = cid*10 + thId;//真正thId
 
         UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
         String sid = account.getUid();
 
-        return studentHomeworkService.submitStudentHomework(multipartFile, sid, thId);
+        StudentHomework studentHomework = studentHomeworkService.submitStudentHomework(multipartFile, sid, thId, comment);
+        if (studentHomework!=null) {
+            this.distributeShToClassMates(studentHomework.getShId());
+            return RestBean.success(studentHomework, "上传作业成功，当前thId: " + thId).asJsonString();
+        }else return RestBean.failure(999, "上传作业失败，当前thId: "+thId).asJsonString();
+    }
 
+    @PostMapping("/course/tHomework/sHomework/submitAll")
+    @PreAuthorize("hasRole('student')")
+    public String submitShsWithSidCidThIdComment(int cid, int thId, String comment, MultipartFile[] multipartFiles) throws SQLException, IOException {//thId指第x次作业
+        thId = cid*10 + thId;//真正thId
+
+        System.out.println(thId);
+        System.out.println(comment);
+        System.out.println(multipartFiles);
+
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String sid = account.getUid();
+
+        List<StudentHomework> studentHomeworkList = new ArrayList<>();
+        for (MultipartFile multipartFile : multipartFiles){
+            StudentHomework studentHomework = studentHomeworkService.submitStudentHomework(multipartFile, sid, thId, comment);
+            System.out.println(studentHomework);
+            if (studentHomework!=null){
+                this.distributeShToClassMates(studentHomework.getShId());
+                studentHomeworkList.add(studentHomework);}
+            else return RestBean.failure(999, "上传作业失败，当前thId: "+thId).asJsonString();
+        }
+        return RestBean.success(studentHomeworkList, "上传作业成功，当前thId: "+thId).asJsonString();
+
+        //return studentHomeworkService.submitStudentHomework(multipartFile, sid, thId);
     }
 
     @GetMapping("/course/{cid}/tHomework/{thId}/download")//此处thId指第x次作业

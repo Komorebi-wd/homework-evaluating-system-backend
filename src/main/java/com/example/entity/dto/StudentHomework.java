@@ -25,4 +25,5 @@ public class StudentHomework {
     String fileName;
     String fileSize;
     Date submitTime;
+    String comment;
 }

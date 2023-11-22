@@ -114,7 +114,7 @@ public boolean downloadStudentHomeworks(List<StudentHomework> shList, HttpServle
 
     //thId为真正thId
     @Transactional
-    public String submitStudentHomework(MultipartFile multipartFile,String sid, int thId) throws IOException, SQLException {
+    public StudentHomework submitStudentHomework(MultipartFile multipartFile,String sid, int thId, String comment) throws IOException, SQLException {
         //thId = cid*10 + thId;
         StudentHomework studentHomework = new StudentHomework()
                 .setSid(sid)
@@ -123,10 +123,13 @@ public boolean downloadStudentHomeworks(List<StudentHomework> shList, HttpServle
                 .setFileName(multipartFile.getOriginalFilename().substring(0,multipartFile.getOriginalFilename().lastIndexOf(".")))
                 .setFileType(newFileUtil.getExtension(multipartFile))
                 .setFileSize(String.valueOf(multipartFile.getSize()))
-                .setSubmitTime(new Date());
+                .setSubmitTime(new Date())
+                .setComment(comment);
 
         if (this.saveOrUpdate(studentHomework)){
-            return RestBean.success(studentHomework).asJsonString();
-        } else return RestBean.failure(999, "上传学生错误").asJsonString();
+            //return RestBean.success(studentHomework).asJsonString();
+            return studentHomework;
+        } else return null;
+            //return RestBean.failure(999, "上传学生错误").asJsonString();
     }
 }
