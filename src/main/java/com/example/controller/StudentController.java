@@ -83,11 +83,11 @@ public class StudentController {
 
     }
 
+    //指定shId下，我被批改的全部记录
     @GetMapping("/course/tHomework/sHomework/{shId}/mark/getAll")
     public String getAllMarksWithShId(@PathVariable int shId){
         QueryWrapper<Mark> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("sh_id", shId);
-
         List<Mark> marks = markMapper.selectList(queryWrapper);
         return RestBean.success(marks, "成功查询批改列表，当前shId: " + shId).asJsonString();
     }
