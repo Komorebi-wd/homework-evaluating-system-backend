@@ -48,6 +48,7 @@ public class StudentController {
     * 5. addMarkWithShIdCommentCommentIdScore 添加作业批改, 提交次数+1（文件、评论、分数）（CommentId取自UserDetail）（应该只能提交一版，后续只能修改）
     * 6. getMyMarksWithCidThId 查询我的所有提交记录(ThId为第x次作业）
     * 7. getAllMarksWithShId 查询指定ShId的被批改记录
+    * 8. getMarkWithMid 查询指定mid的单条批改记录
     * */
     @Resource
     CourseServiceImpl courseService;
@@ -73,6 +74,11 @@ public class StudentController {
     TeacherHomeworkMapper teacherHomeworkMapper;
     @Resource
     MarkUtils markUtils;
+
+    @GetMapping("course/tHomework/sHomrwork/mark/{mid}")
+    public String getMarkWithMid(@PathVariable int mid){
+        return RestBean.success(markService.getById(mid), "成功查询批改信息，当前mid："+mid).asJsonString();
+    }
 
     @GetMapping("/tHomework/unSubmit/getAll")
     public String getAllUnSubmitThsWithSid(){
