@@ -15,11 +15,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,8 @@ public class StudentController {
     * 1. getAllCourses 获得全部课程信息
     * 2. addScWithSidCid 学生选课(sid取自UserDetail）, 后续再加：（课程已满or选课时间外不能选)
     * 3. getAllCoursesBySid 当前学生课程列表（sid取自UserDetail）
-    * 4. getAllThsWithCid 查看指定cid下所有教师作业Th
+    * 4. getAllThsWith
+    * Cid 查看指定cid下所有教师作业Th
     * 5. downloadThWithCidThId 下载指定cid下指定thId教师作业（thId指第x次作业）
     * 6. submitShWithSidCidThIdComment 上传指定cid、thId的学生作业Sh（sid取自UserDetail)
     * 6-5. submitShsWithSidCidThIdComment 上传指定cid、thId的多个学生作业Shs（sid取自UserDetail)
@@ -307,7 +308,7 @@ public class StudentController {
 
     @GetMapping("/course/{cid}/tHomework/{thId}/download")//此处thId指第x次作业
     @PreAuthorize("hasRole('student')")
-    public String downloadThWithCidThid(@PathVariable int cid, @PathVariable int thId, HttpServletResponse response) throws UnsupportedEncodingException {
+    public String downloadThWithCidThid(@PathVariable int cid, @PathVariable int thId, HttpServletResponse response) throws IOException {
         thId = cid*10 + thId;//真正thId
         if (teacherHomeworkService.downloadThHomework(thId, response))
             return RestBean.success("教师作业成功下载，thId: "+ thId).asJsonString();

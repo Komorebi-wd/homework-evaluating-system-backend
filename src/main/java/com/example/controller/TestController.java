@@ -42,6 +42,14 @@ public class TestController {
         return JSONObject.toJSONString(SecurityContextHolder.getContext().getAuthentication().getPrincipal(), JSONWriter.Feature.WriteNulls);
     }
 
+    @GetMapping("/myDetail")
+    public String getMyDetail(){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        System.out.println("account"+account);
+        return RestBean.success(account, "个人信息查询成功").asJsonString();
+    }
+
     //添加用户，需管理员权限
     @PreAuthorize("hasRole('admin')")
     @PostMapping("/addUser")
@@ -51,12 +59,20 @@ public class TestController {
 
     //更改密码，（非忘记密码，需旧密码）
     @PostMapping("/changePassword")
-    public String changePasswotd(HttpServletRequest httpServletRequest,
+    public String changePassword(HttpServletRequest httpServletRequest,
                                  String oldPassword, String newPassword){
+        System.out.println("old: "+oldPassword);
+        System.out.println("new: "+newPassword);
         return accountService.changePassword((User)SecurityContextHolder.getContext().getAuthentication().getPrincipal(),
                 httpServletRequest, oldPassword, newPassword);
     }
 
+    @PostMapping("/changeUsername")
+    public String changeUsername(String newName){
+        System.out.println("newName: "+newName);
+        return accountService.changeName((User)SecurityContextHolder.getContext().getAuthentication().getPrincipal(),
+                newName);
+    }
     //管理员
     //获得全部课程信息
     @GetMapping("/course/getAll")
@@ -71,14 +87,6 @@ public class TestController {
         return RestBean.success(teacherHomeworkService.getThsByCid(cid), "作业查询成功").asJsonString();
     }
 
-//    @PostMapping("/mult/add")
-//    public String addStudentCourse(String sid, int cid){
-//        StudentCourse studentCourse = new StudentCourse()
-//                .setSid(sid)
-//                .setCid(cid);
-//        studentCourseService.save(studentCourse);
-//        return RestBean.success(studentCourse, "添加成功").asJsonString();
-//    }
     @Resource
     StudentServiceImpl studentService;
 

@@ -114,6 +114,54 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         }
     }
 
+    public String changeName(UserDetails userDetails,
+                             String newName) {
+        //修改用户名
+        //根据role, 更新用户名
+        Account account = this.findAccountByNameOrEmail(userDetails.getUsername());
+        switch (account.getRole()) {
+            case "admin" -> {
+                Admin admin = new Admin()
+                        .setAid(account.getUid())
+                        .setUsername(newName)
+                        .setPassword(account.getPassword())
+                        .setEmail(account.getEmail())
+                        .setRegisterTime(account.getRegisterTime())
+                        .setPassword(account.getPassword());
+                if (!adminService.updateById(admin)) return RestBean.failure(999, "admin更新失败").asJsonString();
+            }
+            case "teacher" -> {
+                Teacher teacher = new Teacher()
+                        .setTid(account.getUid())
+                        .setUsername(newName)
+                        .setPassword(account.getPassword())
+                        .setEmail(account.getEmail())
+                        .setRegisterTime(account.getRegisterTime())
+                        .setPassword(account.getPassword());
+                if (!teacherService.updateById(teacher)) return RestBean.failure(999, "teacher更新失败").asJsonString();
+            }
+            case "student" -> {
+                Student student = new Student()
+                        .setSid(account.getUid())
+                        .setUsername(newName)
+                        .setPassword(account.getPassword())
+                        .setEmail(account.getEmail())
+                        .setRegisterTime(account.getRegisterTime())
+                        .setPassword(account.getPassword());
+                if (!studentService.updateById(student)) return RestBean.failure(999, "student更新失败").asJsonString();
+            }
+            default -> {
+                return RestBean.failure(999, "invalid role occurs in changeName").asJsonString();
+            }
+        }
+
+        //创建新令牌
+        UserDetails newUserDetails = this.loadUserByUsername(newName);
+        Account newAccount = this.findAccountByNameOrEmail(newName);
+        String newJwtToken = jwtUtils.createJwt(newUserDetails, newAccount.getUid(), newAccount.getUsername());
+        return RestBean.success(newJwtToken, "username更改成功").asJsonString();
+    }
+
     //修改密码（非忘记密码，需登录状态，需旧密码）
     @Transactional//事务
     public String changePassword(UserDetails userDetails,
