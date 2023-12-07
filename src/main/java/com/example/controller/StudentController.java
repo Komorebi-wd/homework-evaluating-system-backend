@@ -75,7 +75,7 @@ public class StudentController {
     @Resource
     MarkUtils markUtils;
 
-    @GetMapping("course/tHomework/sHomrwork/mark/{mid}")
+    @GetMapping("course/tHomework/sHomework/mark/{mid}")
     public String getMarkWithMid(@PathVariable int mid){
         return RestBean.success(markService.getById(mid), "成功查询批改信息，当前mid："+mid).asJsonString();
     }

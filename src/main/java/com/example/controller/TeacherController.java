@@ -2,12 +2,14 @@ package com.example.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.entity.RestBean;
-import com.example.entity.dto.Account;
-import com.example.entity.dto.Course;
-import com.example.entity.dto.Student;
-import com.example.entity.dto.StudentHomework;
+import com.example.entity.dto.*;
+import com.example.entity.vo.TotalScoreVO;
 import com.example.mapper.CourseMapper;
+import com.example.mapper.StudentCourseMapper;
+import com.example.mapper.StudentMapper;
+import com.example.mapper.TeacherHomeworkMapper;
 import com.example.service.AccountService;
+import com.example.service.impl.MarkServiceImpl;
 import com.example.service.impl.StudentHomeworkServiceImpl;
 import com.example.service.impl.StudentServiceImpl;
 import com.example.service.impl.TeacherHomeworkServiceImpl;
@@ -30,12 +32,17 @@ import java.util.List;
 @RequestMapping("/api/teacher")
 public class TeacherController {
     /*
-    * 1: getAllCoursesByTid 获得当前tid(UserDetail)下全部course
-    * 2: getAllStudentsByCid 获得指定Cid下全部学生
-    * 3: putThWithCidEndDateComment 为指定Cid添加Th作业, 同时指定截止日期
-    * 4: getAllShWithCidThId 获得指定Cid、ThId下全部学生作业Sh(简略信息，而非文件本身）
-    * 5: downloadShsWithCidSidThId 获得指定Cid、ThId下指定sid学生的作业Sh（下载文件, 多个文件打包为zip）
-    * */
+     * 1: getAllCoursesByTid 获得当前tid(UserDetail)下全部course
+     * 2: getAllStudentsByCid 获得指定Cid下全部学生
+     * 3: putThWithCid 为指定Cid添加Th作业
+     * 4: getAllShWithCidThId 获得指定Cid、ThId下全部学生作业Sh(简略信息，而非文件本身）
+     * 5: downloadShsWithCidSidThId 获得指定Cid、ThId下指定sid学生的作业Sh（下载文件, 多个文件打包为zip）
+     * 6: getThsWithTidCid 获得当前tid老师在cid课程布置的所有作业ths
+     * */
+    /*成绩相关
+     * 1：getAvgScoreMarkWithSidThId 获得指定sid学生、指定thId教师布置作业下所获得的成绩(多次提交/被批改取平均值）
+     * 2：getAvgTotalScoresWithCidTid 获得指定cid课程下全部学生的总成绩(总成绩是教师布置全部作业最终平均值)
+     *                               (封装返回，含sid, sname, score)*/
     @Resource
     CourseMapper courseMapper;
     @Resource
@@ -45,7 +52,52 @@ public class TeacherController {
     @Resource
     TeacherHomeworkServiceImpl teacherHomeworkService;
     @Resource
+    TeacherHomeworkMapper teacherHomeworkMapper;
+    @Resource
     StudentHomeworkServiceImpl studentHomeworkService;
+    @Resource
+    MarkServiceImpl markService;
+    @Resource
+    StudentCourseMapper studentCourseMapper;
+    @Resource
+    StudentMapper studentMapper;
+
+    @GetMapping("/course/{cid}/getAllScore")//thId表次数
+    public String getAvgTotalScoresWithCidTid(@PathVariable int cid){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String tid = account.getUid();
+
+        List<Integer> thIds = teacherHomeworkMapper.getThIdsByTidAndCid(tid, cid);
+        List<String> sids = studentCourseMapper.getSidsByCid(cid);
+
+        return RestBean.success(markService.calculateAvgTotalScores(thIds, sids)).asJsonString();
+    }
+
+    //查询指定sid学生的指定thId作业下的成绩
+    //还未被批改则返回null
+    @GetMapping("/course/{cid}/tHomework/{thId}/student/{sid}/getScore")//thId表次数
+    public String getAvgScoreMarkWithSidThId(@PathVariable String sid,@PathVariable int cid, @PathVariable int thId){
+        thId = cid*10 + thId;
+        List<Mark> marks = markService.getAllMarksByThId(thId, sid);
+        Double score = markService.calculateAverageScore(marks);
+        if (score == 0)
+            score = null;
+//        //封装以下再返回
+//        TotalScoreVO totalScoreVO = new TotalScoreVO().setSid(sid)
+//                .setSname(studentMapper.getUsernameBySid(sid))
+//                .setScore(score);
+        return RestBean.success(score ,"成功查询本次作业成绩").asJsonString();
+    }
+
+    @GetMapping("/course/{cid}/tHomework/getAll")
+    public String getThsWithTidCid(@PathVariable int cid){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String tid = account.getUid();
+
+        return RestBean.success(teacherHomeworkMapper.getThsByTidAndCid(tid, cid), "成功查询全部教师作业，当前tid："+tid).asJsonString();
+    }
 
     @GetMapping("/course/{cid}/tHomework/{thId}/sHomework/student/{sid}/download")//thId是第x次作业
     public String downloadShsWithCidSidThId(@PathVariable int cid, @PathVariable String sid, @PathVariable int thId, HttpServletResponse response) throws UnsupportedEncodingException {
