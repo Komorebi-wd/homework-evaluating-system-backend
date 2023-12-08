@@ -7,6 +7,7 @@ import com.example.entity.dto.StudentHomework;
 import com.example.entity.dto.TeacherHomework;
 import com.example.mapper.StudentHomeworkMapper;
 import com.example.service.StudentHomeworkService;
+import com.example.util.CheckUtil;
 import com.example.util.NewFileUtil;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletOutputStream;
@@ -30,6 +31,15 @@ public class StudentHomeworkServiceImpl extends ServiceImpl<StudentHomeworkMappe
     NewFileUtil newFileUtil;
     @Resource
     StudentHomeworkMapper studentHomeworkMapper;
+
+    //比较两个text文件相似度(simHash)
+    public double compareTextFiles(int shId1, int shId2) {
+        StudentHomework studentHomework1 = this.getById(shId1);
+        StudentHomework studentHomework2 = this.getById(shId2);
+        byte[] fileData1 = studentHomework1.getFileData();
+        byte[] fileData2 = studentHomework2.getFileData();
+        return CheckUtil.calculateFileSimilarity(fileData1, fileData2);
+    }
 
     //获得Th下某sid的Sh(有可能是多个）
     public List<StudentHomework> getStudentHomeworksByThIdSid(int thId, String sid) {

@@ -43,6 +43,9 @@ public class TeacherController {
      * 1：getAvgScoreMarkWithSidThId 获得指定sid学生、指定thId教师布置作业下所获得的成绩(多次提交/被批改取平均值）
      * 2：getAvgTotalScoresWithCidTid 获得指定cid课程下全部学生的总成绩(总成绩是教师布置全部作业最终平均值)
      *                               (封装返回，含sid, sname, score)*/
+    /*相似度检验
+     * 1：getTextSilimarityWithShIds 获得指定shId1、shId2学生作业的文本相似度(必须是txt文件)
+    * */
     @Resource
     CourseMapper courseMapper;
     @Resource
@@ -61,6 +64,11 @@ public class TeacherController {
     StudentCourseMapper studentCourseMapper;
     @Resource
     StudentMapper studentMapper;
+
+    @GetMapping("/sHomework/{shId1}/{shId2}/compare")
+    public String getTextSilimarityWithShIds(@PathVariable int shId1, @PathVariable int shId2){
+        return RestBean.success(studentHomeworkService.compareTextFiles(shId1, shId2)).asJsonString();
+    }
 
     @GetMapping("/course/{cid}/getAllScore")//thId表次数
     public String getAvgTotalScoresWithCidTid(@PathVariable int cid){
@@ -145,3 +153,5 @@ public class TeacherController {
         return RestBean.success(courseList, "课程列表查询成功，当前教师："+tid).asJsonString();
     }
 }
+
+
