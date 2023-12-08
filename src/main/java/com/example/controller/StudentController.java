@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.entity.RestBean;
 import com.example.entity.dto.*;
 import com.example.entity.vo.response.DistributionVO;
+import com.example.entity.vo.response.StudentScoreVO;
 import com.example.mapper.*;
 import com.example.service.impl.*;
 import com.example.util.MarkUtils;
@@ -50,6 +51,8 @@ public class StudentController {
     * 7. getAllMarksWithShId 查询指定ShId的被批改记录
     * 8. getMarkWithMid 查询指定mid的单条批改记录
     * */
+    /*成绩相关
+    * 1. getSubmittedAvgScoresWithSidCid 获得本学生指定cid下全部已提交作业的成绩*/
     @Resource
     CourseServiceImpl courseService;
     @Resource
@@ -74,6 +77,28 @@ public class StudentController {
     TeacherHomeworkMapper teacherHomeworkMapper;
     @Resource
     MarkUtils markUtils;
+
+
+    @GetMapping("/course/{cid}/getSubmittedScores")
+    public String getSubmittedAvgScoresWithSidCid(@PathVariable int cid){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String sid = account.getUid();
+        List<Integer> thIds = teacherHomeworkService.findSubmittedThIds(sid, cid);
+        List<Double> avgScores = markService.calculateAvgScoresWithThIdsSid(thIds, sid);
+        List<StudentScoreVO> studentScores = new ArrayList<>();
+        for (int i = 0; i < thIds.size(); i++) {
+            StudentScoreVO studentScoreVO = new StudentScoreVO();
+            studentScoreVO.setScore(avgScores.get(i));
+//            System.out.println(thIds.get(i));
+//            System.out.println(cid);
+//            System.out.println(thIds.get(i)%cid);
+            studentScoreVO.setThId(thIds.get(i)%(10*cid));
+
+            studentScores.add(studentScoreVO);
+        }
+        return RestBean.success(studentScores, "成功查询指定sid、cid下全部已提交作业平均分，当前sid："+sid+", cid: "+cid).asJsonString();
+    }
 
     @GetMapping("course/tHomework/sHomework/mark/{mid}")
     public String getMarkWithMid(@PathVariable int mid){

@@ -30,6 +30,21 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
     @Resource
     StudentMapper studentMapper;
 
+    //计算sid学生在thIds作业下，每份教师作业thId下的平均分
+    //未批改则默认null
+    public List<Double> calculateAvgScoresWithThIdsSid(List<Integer> thIds, String sid){
+        List<Double> avgScores = new ArrayList<>();
+
+        for (Integer thId : thIds) {
+            List<Mark> marks = getAllMarksByThId(thId, sid);
+            Double avgScore = calculateAverageScore(marks);
+            if (avgScore == 0.0) avgScore = null;
+            avgScores.add(avgScore);
+        }
+
+        return avgScores;
+    }
+
     // 对于给定 List<int> thIds 和 List<String> sids，计算每个 sid 的 avgTotalScore
     //返回TotalScoreVO
     //score为0则返回null

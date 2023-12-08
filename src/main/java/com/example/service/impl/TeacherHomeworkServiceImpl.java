@@ -40,6 +40,43 @@ public class TeacherHomeworkServiceImpl extends ServiceImpl<TeacherHomeworkMappe
     @Resource
     StudentHomeworkMapper studentHomeworkMapper;
 
+    //sid学生已经提交的教师作业thIds
+    public List<Integer> findSubmittedThIds(String sid, int cid) {
+//        // sid所选全部cids
+//        List<Integer> cids = studentCourseMapper.selectList(
+//                        new QueryWrapper<StudentCourse>().eq("sid", sid))
+//                .stream()
+//                .map(StudentCourse::getCid)
+//                .collect(Collectors.toList());
+
+        // cid所对应全部应提交thIds
+        List<Integer> allThIds = teacherHomeworkMapper.selectList(
+                        new QueryWrapper<TeacherHomework>().eq("cid", cid))
+                .stream()
+                .map(TeacherHomework::getThId)
+                .toList();
+
+        //sid所对应全部已提交thIds
+        List<Integer> submittedThIds = studentHomeworkMapper.selectList(
+                        new QueryWrapper<StudentHomework>()
+                                .eq("sid", sid))
+                .stream()
+                .map(StudentHomework::getThId)
+                .toList();
+
+        //做差集，获得应提交且已提交thIds
+        List<Integer> thIds  = allThIds.stream()
+                .filter(thId -> submittedThIds.contains(thId))
+                .collect(Collectors.toList());
+
+//        List<TeacherHomework> teacherHomeworks = teacherHomeworkMapper.selectBatchIds(submittedThIds);
+//        for ( TeacherHomework teacherHomework : teacherHomeworks) {
+//            teacherHomework.setCname(courseMapper.getCnameByCid(teacherHomework.getCid()));
+//        }
+//        return teacherHomeworks;
+        return thIds;
+    }
+
     public List<TeacherHomework> findUnsubmittedThIds(String sid) {
         // sid所选全部cids
         List<Integer> cids = studentCourseMapper.selectList(
