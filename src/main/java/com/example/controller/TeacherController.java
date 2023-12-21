@@ -96,7 +96,7 @@ public class TeacherController {
     }
     @GetMapping("/course/{cid}/suggestion/getN")
     public String getNSuggestionWithCid(@PathVariable int cid){
-        return RestBean.success(suggestionMapper.getSuggestionsByCidAndStatusN(cid), "成功查询全部已回复申诉").asJsonString();
+        return RestBean.success(suggestionMapper.getSuggestionsByCidAndStatusN(cid), "成功查询全部未回复申诉").asJsonString();
     }
 
     @PostMapping("/course/{cid}/tHomework/{thId}/student/{sid}/changeScore/{newScore}")
