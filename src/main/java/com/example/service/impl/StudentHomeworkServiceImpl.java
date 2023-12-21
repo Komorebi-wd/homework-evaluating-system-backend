@@ -16,6 +16,7 @@ import com.example.util.NewFileUtil;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.converter.json.GsonBuilderUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,6 +61,7 @@ public class StudentHomeworkServiceImpl extends ServiceImpl<StudentHomeworkMappe
 
     public List<SimilarHomework> calculateSimilarHomeworksWithThId(int thId) {
         int cid = teacherHomeworkMapper.getCidByThId(thId);
+        System.out.println(cid);
         List<String> sids = studentCourseMapper.getSidsByCid(cid);
         System.out.println("1");
 

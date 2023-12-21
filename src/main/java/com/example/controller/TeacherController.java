@@ -109,6 +109,7 @@ public class TeacherController {
     @GetMapping("/course/{cid}/tHomework/{thId}/compare")
     public String getSimilarHomeworksWithCidThId(@PathVariable int cid, @PathVariable int thId){
         thId = cid*10+thId;
+        System.out.println(thId);
         return RestBean.success(studentHomeworkService.calculateSimilarHomeworksWithThId(thId), "成功查询全部相似作业信息").asJsonString();
     }
 
@@ -147,6 +148,7 @@ public class TeacherController {
 
     @GetMapping("/course/{cid}/tHomework/getAll")
     public String getThsWithTidCid(@PathVariable int cid){
+        System.out.println("get方法1111111111111111111111111"+cid);
         UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
         String tid = account.getUid();
