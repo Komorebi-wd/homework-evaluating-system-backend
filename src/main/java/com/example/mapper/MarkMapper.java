@@ -6,6 +6,7 @@ import com.example.entity.dto.Student;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -25,4 +26,22 @@ public interface MarkMapper extends BaseMapper<Mark> {
             "INNER JOIN test1.student_homework sh ON m.sh_id = sh.sh_id " +
             "WHERE sh.th_id = #{thId} AND m.commenter_id = #{sid}")
     List<Mark> selectMarksByThId(@Param("thId") int thId, @Param("sid") String sid);
+
+    @Update("<script>" +
+            "UPDATE mark SET score = #{newScore} " +
+            "WHERE sh_id IN " +
+            "<foreach item='id' collection='shIds' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
+    int updateScoreBatch(@Param("shIds") List<Integer> shIds, @Param("newScore") double newScore);
+
+    @Update("<script>" +
+            "UPDATE mark SET score = score + #{addScore} " +
+            "WHERE sh_id IN " +
+            "<foreach item='id' collection='shIds' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
+    int addScoreBatch(@Param("shIds") List<Integer> shIds, @Param("addScore") double addScore);
 }

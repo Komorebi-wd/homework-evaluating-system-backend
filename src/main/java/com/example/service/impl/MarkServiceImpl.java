@@ -1,11 +1,13 @@
 package com.example.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.RestBean;
 import com.example.entity.dto.Mark;
 import com.example.entity.dto.StudentHomework;
 import com.example.entity.vo.TotalScoreVO;
 import com.example.mapper.MarkMapper;
+import com.example.mapper.StudentHomeworkMapper;
 import com.example.mapper.StudentMapper;
 import com.example.service.MarkService;
 import com.example.util.NewFileUtil;
@@ -29,6 +31,16 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
     MarkMapper markMapper;
     @Resource
     StudentMapper studentMapper;
+    @Resource
+    StudentHomeworkMapper studentHomeworkMapper;
+
+    //更改指定sid某次作业的分数（通过更改mark的方式）
+    public void updateScoresForShIds(String sid, Integer thId, double newScore) {
+        List<Integer> shIds = studentHomeworkMapper.getShIdsBySidAndThId(sid, thId);
+        if (shIds != null && !shIds.isEmpty()) {
+            markMapper.updateScoreBatch(shIds, newScore);
+        }
+    }
 
     //计算sid学生在thIds作业下，每份教师作业thId下的平均分
     //未批改则默认null

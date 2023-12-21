@@ -4,15 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.entity.RestBean;
 import com.example.entity.dto.*;
 import com.example.entity.vo.TotalScoreVO;
-import com.example.mapper.CourseMapper;
-import com.example.mapper.StudentCourseMapper;
-import com.example.mapper.StudentMapper;
-import com.example.mapper.TeacherHomeworkMapper;
+import com.example.mapper.*;
 import com.example.service.AccountService;
-import com.example.service.impl.MarkServiceImpl;
-import com.example.service.impl.StudentHomeworkServiceImpl;
-import com.example.service.impl.StudentServiceImpl;
-import com.example.service.impl.TeacherHomeworkServiceImpl;
+import com.example.service.impl.*;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,10 +36,16 @@ public class TeacherController {
     /*成绩相关
      * 1：getAvgScoreMarkWithSidThId 获得指定sid学生、指定thId教师布置作业下所获得的成绩(多次提交/被批改取平均值）
      * 2：getAvgTotalScoresWithCidTid 获得指定cid课程下全部学生的总成绩(总成绩是教师布置全部作业最终平均值)
-     *                               (封装返回，含sid, sname, score)*/
+     * 3. changeScoreWithCidThIdSid 老师更改某学生某次作业分数
+     * 4. addScoreForTopNStudentWithCidAddScoreN 为cid课程下批改作业最多的前n个人提高addScore分数（注意若原本为null则无法提高，且未设置最大值100）
+     */
     /*相似度检验
-     * 1：getTextSilimarityWithShIds 获得指定shId1、shId2学生作业的文本相似度(必须是txt文件)
+     * 1：getSimilarHomeworksWithCidThId 获得指定cid课程第thId次作业下每个学生的相似度情况（封装在SimilarHomework中返回）
     * */
+    /*申诉相关
+     * 1. getNSuggestionWithCid 查询cid课堂中未回复的申诉
+     * 2. getYSuggestionWithCid 查询cid课堂中已回复的申诉
+     * 3. answerSuggestionWithSuggestionIdAnswer 回复学生的申诉*/
     @Resource
     CourseMapper courseMapper;
     @Resource
@@ -63,12 +63,59 @@ public class TeacherController {
     @Resource
     StudentCourseMapper studentCourseMapper;
     @Resource
+    StudentCourseServiceImpl studentCourseService;
+    @Resource
     StudentMapper studentMapper;
+    @Resource
+    SuggestionMapper suggestionMapper;
 
-    @GetMapping("/sHomework/{shId1}/{shId2}/compare")
-    public String getTextSilimarityWithShIds(@PathVariable int shId1, @PathVariable int shId2){
-        return RestBean.success(studentHomeworkService.compareTextFiles(shId1, shId2)).asJsonString();
+    @PostMapping("/course/score/addScore")
+    public String addScoreForTopNStudentWithCidAddScoreN(int cid, double addScore, int n){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String tid = account.getUid();
+        System.out.println(n);
+        List<String> sids = studentCourseService.getTopSidsByMarkCount(cid, n);
+        System.out.println(sids);
+        String message = studentHomeworkService.addScoreWithTidCidSidsAddScore(tid, cid, sids, addScore);
+        return RestBean.success(message).asJsonString();
     }
+
+    @PostMapping("/course/suggestion/answer")
+    public String answerSuggestionWithSuggestionIdAnswer(int suggestionId, String answer) {
+        Suggestion suggestion = suggestionMapper.selectById(suggestionId);
+        suggestion.setAnswer(answer);
+        suggestion.setStatus("Y");
+        suggestionMapper.updateById(suggestion);
+        return RestBean.success(suggestion, "成功回复").asJsonString();
+    }
+
+    @GetMapping("/course/{cid}/suggestion/getY")
+    public String getYSuggestionWithCid(@PathVariable int cid){
+        return RestBean.success(suggestionMapper.getSuggestionsByCidAndStatusY(cid), "成功查询全部已回复申诉").asJsonString();
+    }
+    @GetMapping("/course/{cid}/suggestion/getN")
+    public String getNSuggestionWithCid(@PathVariable int cid){
+        return RestBean.success(suggestionMapper.getSuggestionsByCidAndStatusN(cid), "成功查询全部已回复申诉").asJsonString();
+    }
+
+    @PostMapping("/course/{cid}/tHomework/{thId}/student/{sid}/changeScore/{newScore}")
+    public String changeScoreWithCidThIdSid(@PathVariable int cid, @PathVariable int thId, @PathVariable String sid, @PathVariable double newScore){
+        thId = cid*10 + thId;
+        markService.updateScoresForShIds(sid, thId, newScore);
+        return RestBean.success("成功修改").asJsonString();
+    }
+
+    @GetMapping("/course/{cid}/tHomework/{thId}/compare")
+    public String getSimilarHomeworksWithCidThId(@PathVariable int cid, @PathVariable int thId){
+        thId = cid*10+thId;
+        return RestBean.success(studentHomeworkService.calculateSimilarHomeworksWithThId(thId), "成功查询全部相似作业信息").asJsonString();
+    }
+
+//    @GetMapping("/sHomework/{shId1}/{shId2}/compare")
+//    public String getTextSilimarityWithShIds(@PathVariable int shId1, @PathVariable int shId2){
+//        return RestBean.success(studentHomeworkService.compareFiles(shId1, shId2), "<--成功查询相似度").asJsonString();
+//    }
 
     @GetMapping("/course/{cid}/getAllScore")//thId表次数
     public String getAvgTotalScoresWithCidTid(@PathVariable int cid){

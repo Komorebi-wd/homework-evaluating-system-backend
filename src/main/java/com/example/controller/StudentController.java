@@ -53,6 +53,10 @@ public class StudentController {
     * */
     /*成绩相关
     * 1. getSubmittedAvgScoresWithSidCid 获得本学生指定cid下全部已提交作业的成绩*/
+    /*申诉相关
+    * 1. addSuggestionWithCidQ 向指定cid课堂提交申诉question
+    * 2. getNSuggestionWithCid 查询本人在cid课堂中未被回复的申诉
+    * 3. getNSuggestionWithCid 查询本人在cid课堂中已被回复的申诉*/
     @Resource
     CourseServiceImpl courseService;
     @Resource
@@ -77,6 +81,42 @@ public class StudentController {
     TeacherHomeworkMapper teacherHomeworkMapper;
     @Resource
     MarkUtils markUtils;
+    @Resource
+    SuggestionServiceImpl suggestionService;
+    @Resource
+    SuggestionMapper suggestionMapper;
+
+    @GetMapping("/course/{cid}/suggestion/getY")
+    public String getYSuggestionWithCid(@PathVariable int cid){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String sid = account.getUid();
+        return RestBean.success(suggestionMapper.getSuggestionsBySidAndCidAndStatusY(sid, cid), "成功查询全部已回复申诉").asJsonString();
+    }
+
+    @GetMapping("/course/{cid}/suggestion/getN")
+    public String getNSuggestionWithCid(@PathVariable int cid){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String sid = account.getUid();
+        return RestBean.success(suggestionMapper.getSuggestionsBySidAndCidAndStatusN(sid, cid), "成功查询全部未回复申诉").asJsonString();
+    }
+
+    @PostMapping("/course/suggestion/add")
+    public String addSuggestionWithCidQ(int cid, String question){
+        UserDetails userDetails = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Account account = accountService.findAccountByNameOrEmail(userDetails.getUsername());
+        String sid = account.getUid();
+
+        Suggestion suggestion = new Suggestion()
+                .setSid(sid)
+                .setCid(cid)
+                .setQuestion(question)
+                .setStatus("N");
+        if (suggestionService.saveOrUpdate(suggestion)){
+            return RestBean.success(suggestion, "提交成功").asJsonString();
+        } else return RestBean.failure(999, "提交失败").asJsonString();
+    }
 
 
     @GetMapping("/course/{cid}/getSubmittedScores")

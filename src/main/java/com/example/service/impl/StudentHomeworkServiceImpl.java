@@ -5,7 +5,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.RestBean;
 import com.example.entity.dto.StudentHomework;
 import com.example.entity.dto.TeacherHomework;
+import com.example.entity.vo.response.SimilarHomework;
+import com.example.mapper.MarkMapper;
+import com.example.mapper.StudentCourseMapper;
 import com.example.mapper.StudentHomeworkMapper;
+import com.example.mapper.TeacherHomeworkMapper;
 import com.example.service.StudentHomeworkService;
 import com.example.util.CheckUtil;
 import com.example.util.NewFileUtil;
@@ -20,6 +24,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -31,14 +36,67 @@ public class StudentHomeworkServiceImpl extends ServiceImpl<StudentHomeworkMappe
     NewFileUtil newFileUtil;
     @Resource
     StudentHomeworkMapper studentHomeworkMapper;
+    @Resource
+    TeacherHomeworkMapper teacherHomeworkMapper;
+    @Resource
+    StudentCourseMapper studentCourseMapper;
 
-    //比较两个text文件相似度(simHash)
-    public double compareTextFiles(int shId1, int shId2) {
+    @Resource
+    MarkMapper markMapper;
+
+    //为指定课程下的一批指定学生添加成绩
+    public String addScoreWithTidCidSidsAddScore(String tid, int cid, List<String> sids, double addScore){
+        List<Integer> thIds = teacherHomeworkMapper.getThIdsByTidAndCid(tid, cid);
+        System.out.println(thIds);
+        List<Integer> shIds = studentHomeworkMapper.getShIdsBySidsAndThIds(sids, thIds);
+        System.out.println(shIds);
+
+        if (shIds != null && !shIds.isEmpty()) {
+            int items = markMapper.addScoreBatch(shIds, addScore);
+            return "共"+items+"项记录被成功更改";
+        }
+        return "更新失败";
+    }
+
+    public List<SimilarHomework> calculateSimilarHomeworksWithThId(int thId) {
+        int cid = teacherHomeworkMapper.getCidByThId(thId);
+        List<String> sids = studentCourseMapper.getSidsByCid(cid);
+        System.out.println("1");
+
+        List<SimilarHomework> similarHomeworkList = new ArrayList<>();
+
+        for (String sid : sids) {//遍历每个同学
+            List<Integer> shIds = studentHomeworkMapper.getShIdsBySidAndThId(sid, thId);
+            double maxSimilarity = Double.MIN_VALUE;
+            String mostSimilarSid = null;
+
+            List<Integer> otherShIds = studentHomeworkMapper.getShIdsByDifferentSidAndThId(sid, thId);
+            for (int shId : shIds) {
+                for (int otherShId : otherShIds) {
+                    double similarity = compareFiles(shId, otherShId);
+                        if (similarity > maxSimilarity) {
+                            maxSimilarity = similarity;//所有其他同学中的最大值
+                            mostSimilarSid = studentHomeworkMapper.getSidByShId(otherShId);//该同学sid
+                        }
+                }
+            }
+            if (mostSimilarSid != null) {//异常情况：比如不存在其他同学
+                similarHomeworkList.add(new SimilarHomework(sid, mostSimilarSid, maxSimilarity));
+            }
+        }
+        return similarHomeworkList;
+    }
+
+
+    //比较两个文件相似度(simHash)
+    public double compareFiles(int shId1, int shId2) {
         StudentHomework studentHomework1 = this.getById(shId1);
         StudentHomework studentHomework2 = this.getById(shId2);
         byte[] fileData1 = studentHomework1.getFileData();
+        String fileType1 = studentHomework1.getFileType();
         byte[] fileData2 = studentHomework2.getFileData();
-        return CheckUtil.calculateFileSimilarity(fileData1, fileData2);
+        String fileType2 = studentHomework2.getFileType();
+        return CheckUtil.calculateFileSimilarity(fileData1, fileType1, fileData2, fileType2);
     }
 
     //获得Th下某sid的Sh(有可能是多个）
